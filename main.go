@@ -22,7 +22,7 @@ type ViaCep struct {
 }
 
 func (v ViaCep) GetUrl(cep string) string {
-	return "https://cdn.apicep.com/file/apicep/" + cep + ".json"
+	return "https://viacep.com.br/ws/" + cep + "/json/"
 }
 
 type ApiCep struct {
@@ -35,7 +35,7 @@ type ApiCep struct {
 }
 
 func (a ApiCep) GetUrl(cep string) string {
-	return "https://viacep.com.br/ws/" + cep + "/json/"
+	return "https://cdn.apicep.com/file/apicep/" + cep + ".json"
 }
 
 type ApiInterface interface {
@@ -47,15 +47,15 @@ func main() {
 	c1 := make(chan ApiCep)
 	c2 := make(chan ViaCep)
 
-	go GetCep(ViaCep{}.GetUrl(""), c1)
-	go GetCep(ApiCep{}.GetUrl(""), c2)
+	go GetCep(ApiCep{}.GetUrl(""), c1)
+	go GetCep(ViaCep{}.GetUrl(""), c2)
 
-	// TODO: better formatted output
+	// TODO: uniform output?
 	select {
 	case res := <-c1:
-		fmt.Println("ApiCEP responded first:", res)
+		fmt.Printf("ApiCEP responded first:\n CEP: %s,\n Estado: %s,\n Cidade: %s,\n Distrito: %s,\n Endereço: %s\n", res.Code, res.State, res.City, res.District, res.Address)
 	case res := <-c2:
-		fmt.Println("ViaCEP responded first:", res)
+		fmt.Printf("ViaCEP responded first:\n CEP: %s,\n Logradouro: %s,\n Complemento: %s,\n Bairro: %s,\n Localidade: %s,\n UF: %s\n", res.Cep, res.Logradouro, res.Complemento, res.Bairro, res.Localidade, res.Uf)
 	case <-time.After(time.Second):
 		fmt.Println("Failed: timeout reached.")
 	}
