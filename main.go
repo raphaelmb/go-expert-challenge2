@@ -22,6 +22,8 @@ type ViaCep struct {
 }
 
 func (v ViaCep) GetUrl(cep string) string {
+	// ctx := context.WithValue(context.Background(), "trim", "true")
+	// cep = sanitizeInput(ctx, cep)
 	return "https://viacep.com.br/ws/" + cep + "/json/"
 }
 
@@ -35,12 +37,28 @@ type ApiCep struct {
 }
 
 func (a ApiCep) GetUrl(cep string) string {
+	// ctx := context.WithValue(context.Background(), "trim", "false")
+	// cep = sanitizeInput(ctx, cep)
 	return "https://cdn.apicep.com/file/apicep/" + cep + ".json"
 }
 
 type ApiInterface interface {
 	ViaCep | ApiCep
 }
+
+// func sanitizeInput(ctx context.Context, s string) string {
+// 	if strings.Contains(s, "-") {
+// 		if ctx.Value("trim") == "true" {
+// 			return strings.Replace(s, "-", "", 1)
+// 		}
+// 		return s
+// 	} else {
+// 		if ctx.Value("trim") == "false" {
+// 			return s[:5] + "-" + s[5:]
+// 		}
+// 		return s
+// 	}
+// }
 
 // TODO: get user input in cli?
 func main() {
@@ -50,7 +68,6 @@ func main() {
 	go GetCep(ApiCep{}.GetUrl(""), c1)
 	go GetCep(ViaCep{}.GetUrl(""), c2)
 
-	// TODO: uniform output?
 	select {
 	case res := <-c1:
 		fmt.Printf("ApiCEP responded first:\n CEP: %s,\n Estado: %s,\n Cidade: %s,\n Distrito: %s,\n Endereço: %s\n", res.Code, res.State, res.City, res.District, res.Address)
