@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -25,7 +26,7 @@ type ViaCep struct {
 
 func (v ViaCep) GetUrl(cep string) string {
 	ctx := context.WithValue(context.Background(), "trim", "true")
-	cep = SanitizeInput(ctx, cep)
+	cep = ParseInput(ctx, cep)
 	return "https://viacep.com.br/ws/" + cep + "/json/"
 }
 
@@ -40,7 +41,7 @@ type ApiCep struct {
 
 func (a ApiCep) GetUrl(cep string) string {
 	ctx := context.WithValue(context.Background(), "trim", "false")
-	cep = SanitizeInput(ctx, cep)
+	cep = ParseInput(ctx, cep)
 	return "https://cdn.apicep.com/file/apicep/" + cep + ".json"
 }
 
@@ -49,6 +50,7 @@ type ApiInterface interface {
 }
 
 // TODO: get user input in cli? regex check for numbers and length
+// regex: ([0-9])|([0-9]{5}-[0-9]{3})
 func main() {
 	fmt.Println("Digite o CEP desejado. Exemplo: 12345-678 ou 12345678")
 	var line string
@@ -92,4 +94,20 @@ func GetCep[T ApiInterface](url string, ch chan T) {
 	}
 
 	ch <- c
+}
+
+// utils
+
+func ParseInput(ctx context.Context, s string) string {
+	if strings.Contains(s, "-") {
+		if ctx.Value("trim") == "true" {
+			return strings.Replace(s, "-", "", 1)
+		}
+		return s
+	} else {
+		if ctx.Value("trim") == "false" {
+			return s[:5] + "-" + s[5:]
+		}
+		return s
+	}
 }
