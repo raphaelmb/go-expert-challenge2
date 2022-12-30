@@ -3,10 +3,12 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -49,14 +51,11 @@ type ApiInterface interface {
 	ViaCep | ApiCep
 }
 
-// TODO: get user input in cli? regex check for numbers and length
-// regex: ([0-9])|([0-9]{5}-[0-9]{3})
 func main() {
-	fmt.Println("Digite o CEP desejado. Exemplo: 12345-678 ou 12345678")
-	var line string
-	_, err := fmt.Scan(&line)
+	line, err := getAndCheckInput()
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
+		return
 	}
 
 	c1 := make(chan ApiCep)
@@ -97,6 +96,19 @@ func GetCep[T ApiInterface](url string, ch chan T) {
 }
 
 // utils
+func getAndCheckInput() (string, error) {
+	fmt.Println("Digite o CEP desejado. Exemplo: 12345-678 ou 12345678")
+	var line string
+	_, err := fmt.Scan(&line)
+	if err != nil {
+		log.Fatal(err)
+	}
+	match, err := regexp.Match(`(^[0-9]{8}$)|(^[0-9]{5}-[0-9]{3}$)`, []byte(line))
+	if !match {
+		return "", errors.New(fmt.Sprint("CEP digitado no formato errado."))
+	}
+	return line, nil
+}
 
 func ParseInput(ctx context.Context, s string) string {
 	if strings.Contains(s, "-") {
