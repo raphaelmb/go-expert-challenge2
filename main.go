@@ -32,6 +32,10 @@ func (v ViaCep) GetUrl(cep string) string {
 	return "https://viacep.com.br/ws/" + cep + "/json/"
 }
 
+func (v ViaCep) ViaCepOutput(res ViaCep) {
+	fmt.Printf("ViaCEP respondeu primeiro:\n CEP: %s,\n Logradouro: %s,\n Complemento: %s,\n Bairro: %s,\n Localidade: %s,\n UF: %s\n", res.Cep, res.Logradouro, res.Complemento, res.Bairro, res.Localidade, res.Uf)
+}
+
 type ApiCep struct {
 	Status   int    `json:"status"`
 	Code     string `json:"code"`
@@ -47,12 +51,24 @@ func (a ApiCep) GetUrl(cep string) string {
 	return "https://cdn.apicep.com/file/apicep/" + cep + ".json"
 }
 
+func (a ApiCep) ApiCepOutput(res ApiCep) {
+	fmt.Printf("ApiCEP respondeu primeiro:\n CEP: %s,\n Estado: %s,\n Cidade: %s,\n Distrito: %s,\n Endereço: %s\n", res.Code, res.State, res.City, res.District, res.Address)
+}
+
 type ApiInterface interface {
 	ViaCep | ApiCep
 }
 
 func main() {
-	line, err := getAndCheckInput()
+	fmt.Println("Digite o CEP desejado. Exemplo: 12345-678 ou 12345678")
+	var cep string
+	_, err := fmt.Scan(&cep)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	err = CheckInput(cep)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -61,14 +77,14 @@ func main() {
 	c1 := make(chan ApiCep)
 	c2 := make(chan ViaCep)
 
-	go GetCep(ApiCep{}.GetUrl(line), c1)
-	go GetCep(ViaCep{}.GetUrl(line), c2)
+	go GetCep(ApiCep{}.GetUrl(cep), c1)
+	go GetCep(ViaCep{}.GetUrl(cep), c2)
 
 	select {
 	case res := <-c1:
-		fmt.Printf("ApiCEP respondeu primeiro:\n CEP: %s,\n Estado: %s,\n Cidade: %s,\n Distrito: %s,\n Endereço: %s\n", res.Code, res.State, res.City, res.District, res.Address)
+		ApiCep{}.ApiCepOutput(res)
 	case res := <-c2:
-		fmt.Printf("ViaCEP respondeu primeiro:\n CEP: %s,\n Logradouro: %s,\n Complemento: %s,\n Bairro: %s,\n Localidade: %s,\n UF: %s\n", res.Cep, res.Logradouro, res.Complemento, res.Bairro, res.Localidade, res.Uf)
+		ViaCep{}.ViaCepOutput(res)
 	case <-time.After(time.Second):
 		fmt.Println("Failed: timeout reached.")
 	}
@@ -96,18 +112,15 @@ func GetCep[T ApiInterface](url string, ch chan T) {
 }
 
 // utils
-func getAndCheckInput() (string, error) {
-	fmt.Println("Digite o CEP desejado. Exemplo: 12345-678 ou 12345678")
-	var line string
-	_, err := fmt.Scan(&line)
+func CheckInput(input string) error {
+	match, err := regexp.Match(`(^[0-9]{8}$)|(^[0-9]{5}-[0-9]{3}$)`, []byte(input))
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
-	match, err := regexp.Match(`(^[0-9]{8}$)|(^[0-9]{5}-[0-9]{3}$)`, []byte(line))
 	if !match {
-		return "", errors.New(fmt.Sprint("CEP digitado no formato errado."))
+		return errors.New("CEP digitado no formato errado")
 	}
-	return line, nil
+	return nil
 }
 
 func ParseInput(ctx context.Context, s string) string {
