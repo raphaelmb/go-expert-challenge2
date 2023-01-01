@@ -68,38 +68,39 @@ func main() {
 		return
 	}
 
-	err = CheckInput(cep)
+	err = IsValidCep(cep)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	c1 := make(chan ApiCep)
-	c2 := make(chan ViaCep)
+	apiCepChan := make(chan ApiCep)
+	viaCepChan := make(chan ViaCep)
 
-	go GetCep(ApiCep{}.GetUrl(cep), c1)
-	go GetCep(ViaCep{}.GetUrl(cep), c2)
+	go GetCep(ApiCep{}.GetUrl(cep), apiCepChan)
+	go GetCep(ViaCep{}.GetUrl(cep), viaCepChan)
 
 	select {
-	case res := <-c1:
+	case res := <-apiCepChan:
 		ApiCep{}.ApiCepOutput(res)
-	case res := <-c2:
+	case res := <-viaCepChan:
 		ViaCep{}.ViaCepOutput(res)
 	case <-time.After(time.Second):
 		fmt.Println("Failed: timeout reached.")
 	}
 }
 
-// TODO: error handling
 func GetCep[T ApiInterface](url string, ch chan T) {
 	req, err := http.Get(url)
 
 	if err != nil {
+		return
 	}
 	defer req.Body.Close()
 
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
+		return
 	}
 
 	var c T
@@ -112,7 +113,7 @@ func GetCep[T ApiInterface](url string, ch chan T) {
 }
 
 // utils
-func CheckInput(input string) error {
+func IsValidCep(input string) error {
 	match, err := regexp.Match(`(^[0-9]{8}$)|(^[0-9]{5}-[0-9]{3}$)`, []byte(input))
 	if err != nil {
 		return err
