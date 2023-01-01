@@ -1,3 +1,15 @@
+## Instruções
+
+Execute o arquivo principal: `go run main.go`
+
+Um prompt aparecerá pedindo o CEP: `"Digite o CEP desejado. Exemplo: 12345-678 ou 12345678"`
+
+Digite o CEP desejado e pressione `enter`.
+
+A resposta recebida será dos dados do CEP bem como qual API respondeu primeiro.
+
+---
+
 Neste desafio você terá que usar o que aprendemos com Multithreading e APIs para buscar o resultado mais rápido entre duas APIs distintas.
 
 As duas requisições serão feitas simultaneamente para as seguintes APIs:
